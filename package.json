@@ -1,0 +1,29 @@
+{
+  "name": "auto-content",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "motion": "^13.4.1",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "yet-another-react-lightbox": "^3.32.2",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "eslint": "latest",
+    "eslint-config-next": "latest",
+    "typescript": "latest"
+  }
+}
