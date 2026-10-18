@@ -55,6 +55,7 @@ export default function DraftLauncher({ screen }: { screen: AppScreen }) {
   const requestInFlight = useRef(false);
   const result = useWorkflowStore((state) => state.result);
   const selectedStyleId = useWorkflowStore((state) => state.selectedStyleId);
+  const selectedContextKey = useWorkflowStore((state) => state.selectedContextKey);
   const hasActiveDraft = useWorkflowStore((state) => state.hasActiveDraft);
   const updatedAt = useWorkflowStore((state) => state.updatedAt);
   const lastDraftPath = useWorkflowStore((state) => state.lastDraftPath);
@@ -66,6 +67,7 @@ export default function DraftLauncher({ screen }: { screen: AppScreen }) {
   const setSelectedStyleId = useWorkflowStore(
     (state) => state.setSelectedStyleId,
   );
+  const setSelectedContextKey = useWorkflowStore((state) => state.setSelectedContextKey);
   const setHydrated = useWorkflowStore((state) => state.setHydrated);
   const markDraftPath = useWorkflowStore((state) => state.markDraftPath);
   const carouselAnchorId = useWorkflowStore((state) => state.carousel.anchorReferenceId);
@@ -267,6 +269,11 @@ export default function DraftLauncher({ screen }: { screen: AppScreen }) {
                   <span><strong>View generations</strong><small>See generated slide sets</small></span>
                   <span aria-hidden="true">→</span>
                 </Link>
+                <Link href="/automation">
+                  <span className="library-action-icon" aria-hidden="true">↻</span>
+                  <span><strong>Daily automation</strong><small>Review GFNF runs and schedules</small></span>
+                  <span aria-hidden="true">→</span>
+                </Link>
               </div>
             </motion.section>
           )}
@@ -288,7 +295,7 @@ export default function DraftLauncher({ screen }: { screen: AppScreen }) {
               <p className="eyebrow">Starting draft</p>
               <h1>Loading recent context</h1>
               <p className="supporting-copy">
-                Fetching the latest 100 messages from Aletheia.
+                Fetching the latest 50 messages from Aletheia.
               </p>
             </motion.section>
           )}
@@ -333,10 +340,28 @@ export default function DraftLauncher({ screen }: { screen: AppScreen }) {
                 </ul>
               </div>
 
+              {result.success && result.contextGroups && result.contextGroups.length > 0 && (
+                <div className="context-picker">
+                  <div className="report-heading"><span>GFNF source brief</span><span>Select one</span></div>
+                  {result.contextGroups.slice(0, 12).map((group) => (
+                    <button
+                      type="button"
+                      key={group.key}
+                      className={selectedContextKey === group.key ? "selected" : ""}
+                      onClick={() => setSelectedContextKey(group.key)}
+                    >
+                      <span><strong>{new Date(group.timestamp).toLocaleString()}</strong><small>{group.text || "Image attachment"}</small></span>
+                      <span>{group.products.length > 0 ? `${group.products.length} products` : group.attachments.length > 0 ? `${group.attachments.length} image` : "message"}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {result.success ? (
                 <button
                   type="button"
                   className="primary-button result-action"
+                  disabled={!selectedContextKey}
                   onClick={() => router.push("/draft/topic-style")}
                 >
                   Continue

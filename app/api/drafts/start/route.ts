@@ -1,3 +1,5 @@
+import { groupRecentMessages } from "../../../../lib/gfnf-context";
+
 type ExportMessage = {
   message: string;
   name: string;
@@ -10,7 +12,7 @@ type DiagnosticCheck = {
   detail: string;
 };
 
-const MESSAGE_LIMIT = 100;
+const MESSAGE_LIMIT = 50;
 
 function isExportMessage(value: unknown): value is ExportMessage {
   if (!value || typeof value !== "object") return false;
@@ -128,6 +130,7 @@ export async function POST() {
           Date.parse(left.timestamp) - Date.parse(right.timestamp),
       )
       .slice(-MESSAGE_LIMIT);
+    const contextGroups = groupRecentMessages(messages, MESSAGE_LIMIT);
 
     checks.push({
       label: "Draft context",
@@ -142,6 +145,7 @@ export async function POST() {
       messageCount: recentMessages.length,
       sourceRecordCount: messages.length,
       newestMessageAt: recentMessages.at(-1)?.timestamp ?? null,
+      contextGroups,
       checks,
     });
   } catch (error) {

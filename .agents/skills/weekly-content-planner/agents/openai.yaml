@@ -1,0 +1,4 @@
+interface:
+  display_name: "Weekly Content Planner"
+  short_description: "Plan sourced weekly carousel calendars"
+  default_prompt: "Use $weekly-content-planner to plan next week’s four carousel posts."

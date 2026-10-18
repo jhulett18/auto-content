@@ -6,14 +6,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "discord:bot": "tsx scripts/run-discord-bot.ts",
+    "automation:cron": "tsx scripts/run-automation-cron.ts",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/*.test.ts"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
+    "discord.js": "^14.27.0",
     "motion": "^13.4.1",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "sharp": "^0.35.4",
     "yet-another-react-lightbox": "^3.32.2",
     "zustand": "^5.0.15"
   },
@@ -24,6 +29,7 @@
     "@types/react-dom": "latest",
     "eslint": "latest",
     "eslint-config-next": "latest",
+    "tsx": "^4.23.15",
     "typescript": "latest"
   }
 }

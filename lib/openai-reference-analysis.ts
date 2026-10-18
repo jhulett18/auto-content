@@ -1,5 +1,3 @@
-import "server-only";
-
 import { execFile } from "node:child_process";
 import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -14,6 +12,7 @@ import {
   getStoredReferenceAnalysis,
   saveReferenceAnalysis,
 } from "./references-db";
+import { readReferenceImage } from "./reference-media-cache";
 
 const runFile = promisify(execFile);
 const VIDEO_FRAME_COUNT = 8;
@@ -88,16 +87,8 @@ async function downloadMedia(url: string) {
   return { buffer, contentType: response.headers.get("content-type") ?? "" };
 }
 
-async function imageDataUrl(url: string) {
-  const { buffer, contentType } = await downloadMedia(url);
-  const mime = contentType.includes("png")
-    ? "image/png"
-    : contentType.includes("webp")
-      ? "image/webp"
-      : contentType.includes("gif")
-        ? "image/gif"
-        : "image/jpeg";
-  return `data:${mime};base64,${buffer.toString("base64")}`;
+function webpDataUrl(buffer:Buffer) {
+  return `data:image/webp;base64,${buffer.toString("base64")}`;
 }
 
 async function videoFrameDataUrls(url: string) {
@@ -212,11 +203,11 @@ export async function analyzeReference(
     try {
       images = await videoFrameDataUrls(source.mediaUrl);
     } catch {
-      images = [await imageDataUrl(source.thumbnailUrl)];
+      images = [webpDataUrl(await readReferenceImage(referenceId,"thumbnail"))];
       usedVideoCoverFallback = true;
     }
   } else {
-    images = [await imageDataUrl(source.mediaUrl)];
+    images = [webpDataUrl(await readReferenceImage(referenceId,"thumbnail"))];
   }
 
   const mediaContext = usedVideoCoverFallback

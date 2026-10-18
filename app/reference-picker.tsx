@@ -1,7 +1,6 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import type {
   ReferenceAnalysisResponse,
@@ -10,6 +9,8 @@ import type {
   ReferenceLibraryResponse,
 } from "../lib/reference-types";
 import ReferenceLightbox from "./reference-lightbox";
+import ReliableImage from "./reliable-image";
+import GenerationCostStatus, { generationCostLabel, notifyGenerationCostChanged } from "./generation-cost-status";
 import type { TopicStyleId } from "./topic-styles";
 
 type ReferencePickerProps = {
@@ -162,6 +163,28 @@ export default function ReferencePicker({
     }
   }
 
+  async function toggleSavedReference(asset: ReferenceAsset) {
+    if (saving || asset.mediaType !== "image") return;
+    const savedName = asset.saved ? null : window.prompt("Name this saved reference for Telegram", asset.savedName || `${asset.creatorHandle} reference`);
+    if (!asset.saved && savedName === null) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/references", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: asset.id, saved: !asset.saved, savedName }),
+      });
+      const payload = await response.json() as ReferenceLibraryResponse | { error?: string };
+      if (!response.ok || !("creators" in payload)) throw new Error("error" in payload ? payload.error : "The saved reference could not be updated.");
+      setLibrary(payload);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "The saved reference could not be updated.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function analyzePreview(asset: ReferenceAsset) {
     if (analyzingId) return;
     setAnalyzingId(asset.id);
@@ -202,9 +225,10 @@ export default function ReferencePicker({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ referenceId: asset.id, topicStyleId }),
       });
-      const payload = (await response.json()) as { error?: string; title?: string };
+      const payload = (await response.json()) as { error?: string; title?: string; costUsd?: number | null };
       if (!response.ok) throw new Error(payload.error || "The finished image could not be generated.");
-      setGenerationMessage(`${payload.title || "Finished test image"} saved in Generations.`);
+      notifyGenerationCostChanged();
+      setGenerationMessage(`${payload.title || "Finished test image"} saved in Generations · ${generationCostLabel(payload.costUsd ?? null)}.`);
     } catch (generationError) {
       setGenerationMessage(
         generationError instanceof Error
@@ -255,6 +279,7 @@ export default function ReferencePicker({
           </div>
         )}
       </header>
+      {topicStyleId && <GenerationCostStatus />}
 
       {error && (
         <motion.div
@@ -352,12 +377,12 @@ export default function ReferencePicker({
                                 onClick={() => setPreview(asset)}
                                 aria-label={`Preview ${asset.mediaType} from ${creator.name}`}
                               >
-                                <Image
+                                <ReliableImage
                                   src={asset.thumbnailUrl}
                                   alt=""
                                   fill
                                   sizes="(max-width: 640px) 50vw, 210px"
-                                  unoptimized
+                                  fallbackLabel="Reference thumbnail unavailable"
                                 />
                                 <span className="media-shade" />
                                 <span className="platform-pill">{asset.platform}</span>
@@ -389,6 +414,18 @@ export default function ReferencePicker({
                                   {asset.mediaType !== "image" && isWorkflow ? "Image only" : isSelected ? "Selected" : "Choose"}
                                 </button>
                               )}
+                              {!isWorkflow && asset.mediaType === "image" && (
+                                <button
+                                  type="button"
+                                  className="reference-select-button"
+                                  aria-pressed={asset.saved}
+                                  disabled={saving}
+                                  onClick={() => void toggleSavedReference(asset)}
+                                >
+                                  <span aria-hidden="true">{asset.saved ? "★" : "☆"}</span>
+                                  {asset.saved ? asset.savedName || "Saved for automation" : "Save for automation"}
+                                </button>
+                              )}
                             </article>
                           );
                         })}
@@ -414,7 +451,7 @@ export default function ReferencePicker({
                   onClick={() => setPreview(asset)}
                   aria-label={`Preview selected reference ${slot + 1}`}
                 >
-                  <Image src={asset.thumbnailUrl} alt="" fill sizes="44px" unoptimized />
+                  <ReliableImage src={asset.thumbnailUrl} alt="" fill sizes="44px" fallbackLabel="Thumbnail unavailable" />
                 </button>
               ) : (
                 <span key={slot}>{slot + 1}</span>

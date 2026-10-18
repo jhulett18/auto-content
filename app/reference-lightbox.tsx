@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import Lightbox from "yet-another-react-lightbox";
 import Captions from "yet-another-react-lightbox/plugins/captions";
-import Video from "yet-another-react-lightbox/plugins/video";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import type {
   ReferenceAnalysisResponse,
@@ -72,6 +71,7 @@ export default function ReferenceLightbox({
     );
     const description = (
       <div className="post-preview-details">
+        {asset.mediaType === "video" && <p className="video-thumbnail-note">Video thumbnail only. Playback opens on {asset.platform}.</p>}
         <p>{asset.caption?.trim() || "No caption available."}</p>
         <div className="post-preview-meta">
           {dateLabel(asset.publishedAt) && <span>{dateLabel(asset.publishedAt)}</span>}
@@ -81,7 +81,7 @@ export default function ReferenceLightbox({
         <div className="post-preview-actions">
           {asset.postUrl ? (
             <a href={asset.postUrl} target="_blank" rel="noreferrer">
-              Preview original post <span aria-hidden="true">↗</span>
+              {asset.mediaType === "video" ? `Watch on ${asset.platform}` : "View original post"} <span aria-hidden="true">↗</span>
             </a>
           ) : (
             <span className="post-link-unavailable">Original post link unavailable</span>
@@ -124,28 +124,15 @@ export default function ReferenceLightbox({
       </div>
     );
 
-    return asset.mediaType === "video"
-      ? [
-          {
-            type: "video" as const,
-            poster: asset.thumbnailUrl,
-            sources: [{ src: asset.mediaUrl, type: "video/mp4" }],
-            controls: true,
-            playsInline: true,
-            preload: "metadata",
-            title,
-            description,
-          },
-        ]
-      : [
-          {
-            src: asset.mediaUrl,
-            alt: `Post by ${asset.creatorName}`,
-            imageFit: "contain" as const,
-            title,
-            description,
-          },
-        ];
+    return [{
+      src: asset.mediaType === "video" ? asset.thumbnailUrl : asset.mediaUrl,
+      alt: asset.mediaType === "video"
+        ? `Video thumbnail from ${asset.creatorName}`
+        : `Post by ${asset.creatorName}`,
+      imageFit: "contain" as const,
+      title,
+      description,
+    }];
   }, [
     analysis,
     analysisError,
@@ -166,11 +153,10 @@ export default function ReferenceLightbox({
       open={Boolean(asset)}
       close={onClose}
       slides={slides}
-      plugins={[Video, Captions, Zoom]}
+      plugins={[Captions, Zoom]}
       className="reference-lightbox"
       carousel={{ finite: true, preload: 0, padding: "24px", imageFit: "contain" }}
       captions={{ descriptionTextAlign: "start", descriptionMaxLines: 12, showToggle: true }}
-      video={{ controls: true, playsInline: true, preload: "metadata" }}
       controller={{ closeOnBackdropClick: true }}
       toolbar={{ buttons: ["captions", "close"] }}
       animation={{ fade: 180, swipe: 220 }}
